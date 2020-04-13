@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message SensorData {
+  string name = 1;           // Sensor Name
+  uint64 uid = 2;            // Sensor Unique ID
+  enum SensorType {
+    Unknown = 0;
+    Thermometer = 1;
+    Humidity = 2;
+  }
+  SensorType type = 3;       // Sensor Type
+  uint64 timestamp_us = 4;   // POSIX Timestamp in us
+  int32 index = 5;           // Data index
+  repeated double value = 6;
+}

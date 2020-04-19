@@ -18,20 +18,18 @@ import sys
 import time
 import random
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "generated"))
-import sensor_data_pb2
+from ds18b20_common import SensorDataBase
 
 
-TEST_MODE=True
-
-
-class Ds18b20:
+class Ds18b20(SensorDataBase):
     DEVICE_PATH_ROOT = os.path.join(
         '/', 'sys', 'bus', 'w1', 'devices')
 
+    NETWORK_TEST = False
+
     @classmethod
     def find_device(cls, device_list):
-        if TEST_MODE:
+        if cls.NETWORK_TEST:
             return ['/sys/bus/w1/devices/28-123456789ABCDE',
                     '/sys/bus/w1/devices/28-123456789ABCDF']
 
@@ -58,14 +56,13 @@ class Ds18b20:
     def __init__(self, device_path):
         self.id = os.path.basename(device_path)
         self.path = device_path
-        self.message = sensor_data_pb2.SensorData()
-        self.message.name = self.id
-        self.message.uid = int(re.sub('\-', '', self.id), base=16)
-        self.message.type = sensor_data_pb2.SensorData.SensorType.Value('Thermometer')
-        self.message.index = 0
+        super().__init__(name_=self.id,
+                         uid_=int(re.sub('\-', '', self.id), base=16),
+                         type_='Thermometer',
+                         index_=0)
 
     def read(self):
-        if TEST_MODE:
+        if self.NETWORK_TEST:
             return float(random.randint(0, 50))
 
         with open(os.path.join(self.path, 'w1_slave'), 'r') as f:
@@ -77,16 +74,17 @@ class Ds18b20:
             return float(m.group(1)) / 1000
         return None
 
-    def sensor_message(self, value=None):
+    def update_message(self, value=None):
         if value is None:
             value = self.read()
 
-        self.message.index = self.message.index + 1
-        self.message.ClearField('value')
-        self.message.value.append(value)
-        self.message.timestamp_us = int(time.time() * 1000)
-        
-        return self.message
+        self.sensor_msg.index = self.sensor_msg.index + 1
+        self.sensor_msg.ClearField('value')
+        self.sensor_msg.value.append(value)
+        self.sensor_msg.timestamp_us = int(time.time() * 1000000)
+
+    def sensor_message(self, value=None):
+        return self.sensor_msg
 
     def print_value(self, value=None):
         if value is None:
@@ -118,16 +116,18 @@ def start_sensing(w1_devices, args):
     start_time = time.perf_counter()
     while True:
         loop_start = time.perf_counter()
-        
+
         for device in w1_devices.values():
-            value = device.read()
+            device.update_message()
+
             if txt_out:
-                txt_out.write(device.print_value(value) + '\n')
+                txt_out.write(device.new_csv_line() + '\n')
+                txt_out.flush()
             else:
-                print(device.print_value(value))
+                print(device.new_csv_line())
 
             if udp_out:
-                udp_out.sendto(device.sensor_message(value).SerializeToString(),
+                udp_out.sendto(device.sensor_msg.SerializeToString(),
                                (args.udp_ip, args.udp_port))
 
         if ((args.time > 0) and
@@ -163,11 +163,11 @@ def main():
                         help='Enable UDP output',
                         action='store_true')
     parser.add_argument('--udp_ip', action='store',
-                        help='UDP destinatio IP',
+                        help='UDP destination IP',
                         default='<broadcast>',
                         metavar='IP')
     parser.add_argument('--udp_port', action='store',
-                        help='UDP destinatio port',
+                        help='UDP destination port',
                         type=int,
                         default=28012,
                         metavar='Port')
@@ -175,11 +175,17 @@ def main():
                         action='append',
                         default=[],
                         help='DS18B20 ID(s). Find all device descriptors if omitted')
-    
+    parser.add_argument('--network_test',
+                        help='Run in network test mode',
+                        action='store_true')
+
     args = parser.parse_args()
 
     if args.modprobe:
         sudo_init()
+
+    if args.network_test:
+        Ds18b20.NETWORK_TEST = True
 
     device_list = Ds18b20.find_device(args.device)
     w1_devices = {os.path.basename(k): Ds18b20(k) for k in device_list}
@@ -187,6 +193,7 @@ def main():
     pprint.pprint(list(w1_devices.keys()))
 
     start_sensing(w1_devices, args)
+
 
 if __name__ == "__main__":
     main()

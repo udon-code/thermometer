@@ -78,17 +78,17 @@ optional arguments:
 #### UDPで受信したデータをCSVに保存
 ```
 % ./scripts/ds18b20_client.py \
-  --csv therm_result.csv         #出力ファイル名
+  --csv therm_result.csv         # 出力ファイル名
 ```
 
 #### UDPで受信したデータをリアルタイムでプロット
 ```
 % ./scripts/ds18b20_client.py \
-  -p                             #プロット出力
+  -p                             # プロット出力
 ```
 
 #### 保存したCSVファイルをプロット
 ```
 % ./scripts/ds18b20_client.py \
-  -i therm_result.csv           #プロット出力
+  -i therm_result.csv           # CSVファイル読み込み
 ```

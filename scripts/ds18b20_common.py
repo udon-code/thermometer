@@ -56,24 +56,25 @@ class SensorDataBase:
     def current_data(self):
         return [datetime.now()] + [v for _, v in self.sensor_msg.ListFields()]
 
-    def read_input(self, path):
+    def read_input(self, path_list):
         #result = {k:[] for k in self.csv_header_elems()}
         result = {}
-        f = open(path, 'r')
-        fitr = iter(f.readlines())
-        f.close()
-
         name_idx = self.csv_header_elems().index('name')
 
-        next(fitr)  # skip header
-        for line in fitr:
-            line_elems = [k.strip() for k in line.strip().split(',')]
-            name = line_elems[name_idx]
-            if name not in result:
-                result[name] = {k: [] for k in self.csv_header_elems()}
-            assert(len(line_elems) == len(self.csv_header_elems()))
-            for idx, elem in enumerate(self.csv_header_elems()):
-                result[name][elem].append(self.MESSAGE_VALUE[elem](line_elems[idx]))
+        for path in path_list:
+            f = open(path, 'r')
+            fitr = iter(f.readlines())
+            f.close()
+
+            next(fitr)  # skip header
+            for line in fitr:
+                line_elems = [k.strip() for k in line.strip().split(',')]
+                name = line_elems[name_idx]
+                if name not in result:
+                    result[name] = {k: [] for k in self.csv_header_elems()}
+                assert(len(line_elems) == len(self.csv_header_elems()))
+                for idx, elem in enumerate(self.csv_header_elems()):
+                    result[name][elem].append(self.MESSAGE_VALUE[elem](line_elems[idx]))
 
         return result
 

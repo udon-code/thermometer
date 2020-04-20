@@ -143,6 +143,10 @@ def main():
                         help='modprobe w1-gpio/w1-therm',
                         action='store_true',
                         default=False)
+    parser.add_argument('-l', '--list',
+                        help='Display detected DS18B20 devices and exit',
+                        action='store_true',
+                        default=False)
     parser.add_argument('-t', '--time',
                         help='Set logging time (-1: no timeout)',
                         action='store',
@@ -189,8 +193,11 @@ def main():
 
     device_list = Ds18b20.find_device(args.device)
     w1_devices = {os.path.basename(k): Ds18b20(k) for k in device_list}
-    print("Found %d DS18B20 devices" % (len(w1_devices)))
+    print(f"Found {len(w1_devices)} DS18B20 devices")
     pprint.pprint(list(w1_devices.keys()))
+
+    if args.list:
+        return
 
     start_sensing(w1_devices, args)
 

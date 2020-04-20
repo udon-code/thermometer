@@ -8,6 +8,7 @@ import argparse
 from datetime import datetime, timedelta
 import os
 import pprint
+import math
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
@@ -25,7 +26,7 @@ class LoggerClient(SensorDataBase):
         super().__init__()
         self.rx_ip_addr = ip_addr
         self.port = port
-        self.plot = plot or ifile is not None
+        self.plot = plot or (ifile is not None and len(ifile) > 0)
 
         self.socket = None
         self.csv_of = None
@@ -35,7 +36,7 @@ class LoggerClient(SensorDataBase):
         self.min_val = 10000   # large enough against temperature
         self.max_val = -10000  # small enough against temperature
 
-        if ifile:
+        if ifile is not None and len(ifile) > 0:
             self.data = self.read_input(ifile)
         else:
             self.create_socket()
@@ -116,10 +117,16 @@ class LoggerClient(SensorDataBase):
             self.ln[sensor_name], = self.ax.plot(sensor_data['HostTime'], sensor_data['value'], label=sensor_name)
             self.min_val = min([self.min_val] + sensor_data['value'])
             self.max_val = max([self.max_val] + sensor_data['value'])
-            if sensor_data['HostTime'][0] < self.start_time:
-                self.start_time = sensor_data['HostTime'][0]
-            if sensor_data['HostTime'][-1] > self.end_time:
-                self.end_time = sensor_data['HostTime'][-1]
+            self.start_time = min([self.start_time] + sensor_data['HostTime'])
+            self.end_time   = max([self.end_time] + sensor_data['HostTime'])
+            # if sensor_data['HostTime'][0] < self.start_time:
+            #     self.start_time = sensor_data['HostTime'][0]
+            # if sensor_data['HostTime'][-1] > self.end_time:
+            #     self.end_time = sensor_data['HostTime'][-1]
+
+            print(f"start_time: {self.start_time}")
+            print(f"end_time: {self.end_time}")
+
 
         self.ax.set_ylim(int(self.min_val-0.5), int(self.max_val+1.5))
 
@@ -137,7 +144,7 @@ class LoggerClient(SensorDataBase):
         self.receive_socket()
 
         delta = abs(self.max_val - self.min_val)
-        self.ax.set_ylim(floor(self.min_val-delta*0.1), ceil(self.max_val+delta*0.1))
+        self.ax.set_ylim(math.floor(self.min_val-delta*0.1), math.ceil(self.max_val+delta*0.1))
         period = self.end_time - self.start_time
         self.ax.set_xlim(self.start_time - period*0.1, self.end_time + period*0.1)
 
@@ -154,8 +161,9 @@ class LoggerClient(SensorDataBase):
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-i', '--input', action='store',
+    parser.add_argument('-i', '--input', action='append',
                         help='Read a recorded data instead of UDP (UDP option is disabled)',
+                        default=[],
                         metavar='File')
 
     parser.add_argument('-p', '--plot', action='store_true',

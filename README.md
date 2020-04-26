@@ -29,7 +29,8 @@ optional arguments:
   -i seconds, --interval seconds
                         Sampling Time (default: 1)
   -o text_file, --output text_file
-                        Text file to be dumpped (default: None)
+                        Text file to be dumpped.(default: None)
+                        Create a file from date and time if a directory is specifed.
   -u, --udp             Enable UDP output (default: False)
   --udp_ip IP           UDP destination IP (default: <broadcast>)
   --udp_port Port       UDP destination port (default: 28012)
@@ -43,6 +44,14 @@ optional arguments:
 ```
 % ./scripts/ds18b20_logger.py \
   -o therm_result.csv         \ # 出力ファイル名
+  -i 10                       \ # 計測インターバル
+  -t -1                         # 無限に計測
+```
+
+#### ローカルフォルダに日付ファイルを作成して出力
+```
+% ./scripts/ds18b20_logger.py \
+  -o log                      \ # logフォルダに日付名でファイルを作成
   -i 10                       \ # 計測インターバル
   -t -1                         # 無限に計測
 ```

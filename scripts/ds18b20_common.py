@@ -57,7 +57,6 @@ class SensorDataBase:
         return [datetime.now()] + [v for _, v in self.sensor_msg.ListFields()]
 
     def read_input(self, path_list):
-        #result = {k:[] for k in self.csv_header_elems()}
         result = {}
         name_idx = self.csv_header_elems().index('name')
 

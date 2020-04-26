@@ -119,14 +119,6 @@ class LoggerClient(SensorDataBase):
             self.max_val = max([self.max_val] + sensor_data['value'])
             self.start_time = min([self.start_time] + sensor_data['HostTime'])
             self.end_time   = max([self.end_time] + sensor_data['HostTime'])
-            # if sensor_data['HostTime'][0] < self.start_time:
-            #     self.start_time = sensor_data['HostTime'][0]
-            # if sensor_data['HostTime'][-1] > self.end_time:
-            #     self.end_time = sensor_data['HostTime'][-1]
-
-            print(f"start_time: {self.start_time}")
-            print(f"end_time: {self.end_time}")
-
 
         self.ax.set_ylim(int(self.min_val-0.5), int(self.max_val+1.5))
 

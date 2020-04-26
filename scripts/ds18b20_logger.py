@@ -97,6 +97,10 @@ def sudo_init():
     os.system('modprobe w1-therm')
 
 
+def get_log_name():
+    return datetime.now().strftime('%Y%m%d_%H%M%S') + '.log'
+
+
 def start_sensing(w1_devices, args):
     print("Start DS18B20 logging ... ")
     txt_out = None
@@ -104,8 +108,12 @@ def start_sensing(w1_devices, args):
     udp_message = None
 
     if args.output:
-        txt_out = open(args.output, 'w')
-        print(f"Output result to '{args.output}'")
+        if os.path.isdir(args.output):
+            txt_path = os.path.join(args.output, get_log_name())
+        else:
+            txt_path = args.output
+        txt_out = open(txt_path, 'w')
+        print(f"Output result to '{txt_path}'")
 
     if args.udp:
         udp_out = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -160,7 +168,8 @@ def main():
                         type=int,
                         metavar='seconds')
     parser.add_argument('-o', '--output',
-                        help='Text file to be dumpped',
+                        help='Text file to be dumpped.'
+                        'Create a file from date and time if a directory is specifed.',
                         action='store',
                         metavar='text_file')
     parser.add_argument('-u', '--udp',

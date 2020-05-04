@@ -69,18 +69,21 @@ optional arguments:
 
 ### scripts/ds18b20_client.py Usage
 ```
-usage: ds18b20_client.py [-h] [-i File] [-p] [--csv File] [--udp_ip IP]
-                         [--udp_port Port]
+usage: ds18b20_client.py [-h] [-i File] [-p] [--plot_by_date] [--csv File]
+                         [--udp_ip IP] [--udp_port Port] [--sensors SENSORS]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i File, --input File
                         Read a recorded data instead of UDP (UDP option is
-                        disabled) (default: None)
+                        disabled) (default: [])
   -p, --plot            Plot sensed values (default: False)
+  --plot_by_date        Plot by date (default: False)
   --csv File            Output to CSV file (default: None)
-  --udp_ip IP           UDP destination IP (0.0.0.0 means any) (default: 0.0.0.0)
+  --udp_ip IP           UDP destination IP (0.0.0.0 means any) (default:
+                        0.0.0.0)
   --udp_port Port       UDP destination port (default: 28012)
+  --sensors Name        Use only specified sensor name (default: None)
 ```
 
 ### 使用例

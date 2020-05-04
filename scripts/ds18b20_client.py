@@ -5,11 +5,12 @@ This logger client has following features
  - Receive a protobuf UDP message from multiple logger
 """
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 import os
 import pprint
 import math
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from matplotlib.animation import FuncAnimation
 import numpy as np
 import re
@@ -22,7 +23,8 @@ from ds18b20_common import SensorDataBase
 
 
 class LoggerClient(SensorDataBase):
-    def __init__(self, ip_addr='0.0.0.0', port=28012, csv=None, ifile=None, plot=False):
+    def __init__(self, ip_addr='0.0.0.0', port=28012, csv=None, ifile=None,
+                 sensors=None, plot=False, plot_by_date=False):
         super().__init__()
         self.rx_ip_addr = ip_addr
         self.port = port
@@ -36,8 +38,13 @@ class LoggerClient(SensorDataBase):
         self.min_val = 10000   # large enough against temperature
         self.max_val = -10000  # small enough against temperature
 
+        self.sensors = sensors
+        self.plot_by_date = plot_by_date
+
         if ifile is not None and len(ifile) > 0:
-            self.data = self.read_input(ifile)
+            self.data = self.read_input(ifile, sensors)
+            if plot_by_date:
+                self.data = self.convert_to_plot_by_date(self.data)
         else:
             self.create_socket()
             if csv is not None:
@@ -118,7 +125,10 @@ class LoggerClient(SensorDataBase):
             self.min_val = min([self.min_val] + sensor_data['value'])
             self.max_val = max([self.max_val] + sensor_data['value'])
             self.start_time = min([self.start_time] + sensor_data['HostTime'])
-            self.end_time   = max([self.end_time] + sensor_data['HostTime'])
+            self.end_time = max([self.end_time] + sensor_data['HostTime'])
+
+        if len(self.data) > 0 and self.plot_by_date:
+            self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 
         self.ax.set_ylim(int(self.min_val-0.5), int(self.max_val+1.5))
 
@@ -148,7 +158,24 @@ class LoggerClient(SensorDataBase):
                 self.ln[sensor_name].set_data(sensor_data['HostTime'], sensor_data['value'])
 
         self.ax.figure.canvas.draw()
+
         return self.ln.values()
+
+    def convert_to_plot_by_date(self, data):
+        new_data = {}
+        for sensor_name, sensor_data in data.items():
+            for idx, host_time in enumerate(sensor_data['HostTime']):
+                date_str = host_time.strftime('%Y-%m-%d')
+                new_name = f'{sensor_name}_{date_str}'
+                if new_name not in new_data:
+                    new_data[new_name] = {k: [] for k in sensor_data.keys()}
+                for k in sensor_data.keys():
+                    if k == 'HostTime':
+                        new_data[new_name][k].append(datetime.combine(date.today(), host_time.time()))
+                    else:
+                        new_data[new_name][k].append(sensor_data[k][idx])
+
+        return new_data
 
 
 def main():
@@ -160,6 +187,8 @@ def main():
 
     parser.add_argument('-p', '--plot', action='store_true',
                         help='Plot sensed values')
+    parser.add_argument('--plot_by_date', action='store_true',
+                        help='Plot by date')
 
     parser.add_argument('--csv', action='store',
                         help='Output to CSV file',
@@ -175,12 +204,18 @@ def main():
                         default=28012,
                         metavar='Port')
 
+    parser.add_argument('--sensors', action='append', default=None,
+                        metavar='Name',
+                        help='Use only specified sensor name')
+
     args = parser.parse_args()
 
     client = LoggerClient(ip_addr=args.udp_ip, port=args.udp_port,
                           csv=args.csv,
                           ifile=args.input,
-                          plot=args.plot)
+                          sensors=args.sensors,
+                          plot=args.plot,
+                          plot_by_date=args.plot_by_date)
 
     client.start()
 

@@ -56,9 +56,10 @@ class SensorDataBase:
     def current_data(self):
         return [datetime.now()] + [v for _, v in self.sensor_msg.ListFields()]
 
-    def read_input(self, path_list):
+    def read_input(self, path_list, sensors=None):
         result = {}
         name_idx = self.csv_header_elems().index('name')
+        time_idx = self.csv_header_elems().index('HostTime')
 
         for path in path_list:
             f = open(path, 'r')
@@ -69,6 +70,8 @@ class SensorDataBase:
             for line in fitr:
                 line_elems = [k.strip() for k in line.strip().split(',')]
                 name = line_elems[name_idx]
+                if sensors and name not in sensors:
+                    continue
                 if name not in result:
                     result[name] = {k: [] for k in self.csv_header_elems()}
                 assert(len(line_elems) == len(self.csv_header_elems()))
